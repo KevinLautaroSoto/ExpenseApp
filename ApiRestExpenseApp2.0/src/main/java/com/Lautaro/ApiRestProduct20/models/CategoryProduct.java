@@ -1,6 +1,9 @@
 package com.Lautaro.ApiRestProduct20.models;
 
 import jakarta.persistence.*;
+
+import java.util.List;
+
 @Entity
 @Table(name = "CategoryProduct")
 public class CategoryProduct {
@@ -8,6 +11,9 @@ public class CategoryProduct {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+
+    @OneToMany(mappedBy = "categoryProduct")
+    private List<Product> products;
 
     public CategoryProduct() {}
 
@@ -29,6 +35,14 @@ public class CategoryProduct {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public List<Product> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<Product> products) {
+        this.products = products;
     }
 
     @Override

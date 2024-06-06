@@ -1,6 +1,7 @@
 package com.Lautaro.ApiRestProduct20.repository.impl;
 
 import com.Lautaro.ApiRestProduct20.models.Expense;
+import com.Lautaro.ApiRestProduct20.models.Product;
 import com.Lautaro.ApiRestProduct20.repository.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -17,11 +18,24 @@ import java.util.List;
 public class ExpenseRepositoryImpl implements ExpenseRepository {
     private final JdbcTemplate jdbcTemplate;
 
-    private static final String INSERT_INTO_EXPENSE = "INSERT INTO Expense (description, totalAmount, date) VALUES (?, ?, ?)";
-    private static final String SELECT_ALL_EXPENSE = "SELECT * FROM Expense";
+    private static final String INSERT_INTO_EXPENSE = "INSERT INTO Expenses (description, total_amount, date, user_id, category_expense_id) VALUES (?, ?, ?, ?, ?)";
+    private static final String SELECT_ALL_EXPENSE = "\"SELECT e.id AS expense_id, e.description AS expense_description, \" +\n" +
+            "        \"e.totalAmount AS expense_totalAmount, e.date AS expense_date, \" +\n" +
+            "        \"u.id AS user_id, u.username AS user_username, u.email AS user_email, \" +\n" +
+            "        \"ce.id AS categoryExpense_id, ce.name AS categoryExpense_name, \" +\n" +
+            "        \"p.id AS product_id, p.name AS product_name, p.price AS product_price, \" +\n" +
+            "        \"cp.id AS categoryProduct_id, cp.name AS categoryProduct_name \" +\n" +
+            "        \"FROM Expenses e \" +\n" +
+            "        \"LEFT JOIN Users u ON e.user_id = u.id \" +\n" +
+            "        \"LEFT JOIN CategoryExpense ce ON e.category_expense_id = ce.id \" +\n" +
+            "        \"LEFT JOIN Products p ON e.id = p.expense_id \" +\n" +
+            "        \"LEFT JOIN CategoryProduct cp ON p.category_product_id = cp.id \" +\n" +
+            "        \"ORDER BY e.id, p.id\";";
     private static final String SELECT_EXPENSE_BY_ID = "SELECT * FROM Expense WHERE id = ?";
     private static final String UPDATE_EXPENSE = "UPDATE Expense SET description = ?, totalAmount = ?, date = ? WHERE id = ?";
     private static final String DELETE_UPDATE = "DELETE FROM Expense WHERE id = ?";
+    private static final String INSERT_INTO_PRODUCTS = "INSERT INTO Products (name, price, category_product_id, expense_id) " +
+            "VALUES (?, ?, ?, ?)";
 
     @Autowired
     public ExpenseRepositoryImpl(JdbcTemplate jdbcTemplate) {
@@ -43,10 +57,34 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
     @Override
     public ResponseEntity<String> createExpense(Expense expense) {
         try {
+            //Validar que el user y categoryExpense no sean nulos.
+            if (expense.getUser() == null || expense.getCategoryExpense() == null) {
+                return  ResponseEntity.status(400).body("User and Category Expense must not be null.");
+            }
+
+            //Validar que el user y categoryExpense tengan IDs.
+            if (expense.getUser().getId() == null || expense.getCategoryExpense().getId() == null) {
+                return ResponseEntity.status(400).body("User ID and CategoryExpense ID must not be null.");
+            }
+
             jdbcTemplate.update(INSERT_INTO_EXPENSE,
                     expense.getDescription(),
                     expense.getTotalAmount(),
-                    expense.getDate());
+                    expense.getDate(),
+                    expense.getUser().getId(),
+                    expense.getCategoryExpense().getId());
+
+            //Obtiene el Id de la Expense recién creada.
+            Long expenseId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+
+            //Inserto los productos asosciado a la expense.
+            for (Product product : expense.getProducts()) {
+                jdbcTemplate.update(INSERT_INTO_PRODUCTS,
+                        product.getName(),
+                        product.getPrice(),
+                        product.getCategoryProduct().getId(),
+                        expenseId);
+            }
             return ResponseEntity.ok("Expense successfully created.");
         } catch (DataAccessException e) {
             return ResponseEntity.status(500).body("Error creating expense: " + e.getMessage());
@@ -69,7 +107,7 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
     }
 
     @Override
-    public ResponseEntity<String> udpateExpense(Long id, Expense newExpense) {
+    public ResponseEntity<String> updateExpense(Long id, Expense newExpense) {
         try {
             int rowsAffected = jdbcTemplate.update(
                     UPDATE_EXPENSE,

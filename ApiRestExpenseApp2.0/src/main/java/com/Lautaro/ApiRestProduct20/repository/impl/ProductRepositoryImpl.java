@@ -19,14 +19,13 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final JdbcTemplate jdbcTemplate;
 
     private static final String INSERT_INTO_PRODUCTS = "INSERT INTO Products (name, price, category_product_id, expense_id) VALUES (?, ?, ?, ?)";
-    private static final String SELECT_ALL_PRODUCTS =
-            "SELECT p.id, p.name, p.price, cp.id AS cp_id, cp.name AS cp_name " +
-                    "FROM Products p " +
-                    "LEFT JOIN CategoryProduct cp ON p.category_product_id = cp.id";
+    private static final String SELECT_ALL_PRODUCTS = "SELECT p.id, p.name, p.price, cp.id AS cp_id, cp.name AS cp_name " +
+            "FROM Products p " +
+            "LEFT JOIN Category_Product cp ON p.category_product_id = cp.id";
     private static final String SELECT_PRODUCTS_BY_ID =
             "SELECT p.id, p.name, p.price, cp.id AS cp_id, cp.name AS cp_name " +
                     "FROM Products p " +
-                    "LEFT JOIN CategoryProduct cp ON p.category_product_id = cp.id " +
+                    "LEFT JOIN Category_Product cp ON p.category_product_id = cp.id " +
                     "WHERE p.id = ?";
     private static final String UPDATE_PRODUCT = "UPDATE Products SET name = ?, price = ?, category_product_id = ?, expense_id = ? WHERE id = ?";
     private static final String DELETE_PRODUCT = "DELETE FROM Products WHERE id = ?";
@@ -45,7 +44,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             product.setPrice(rs.getDouble("price"));
 
             Long categoryProductId = rs.getLong("cp_id");
-            if (categoryProductId != null && categoryProductId > 0) {
+            if (categoryProductId != null) {
                 CategoryProduct categoryProduct = new CategoryProduct();
                 categoryProduct.setId(categoryProductId);
                 categoryProduct.setName(rs.getString("cp_name"));
@@ -81,7 +80,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 ps -> ps.setLong(1, id),
                 new ProductRowMapper()
         );
-        return results.isEmpty() ? null : results.get(0);
+        return results.isEmpty() ? null : results.getFirst();
     }
 
     @Override

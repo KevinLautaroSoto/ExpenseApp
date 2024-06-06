@@ -9,6 +9,6 @@ public interface ExpenseRepository {
     ResponseEntity<String> createExpense(Expense expense);
     List<Expense> getAllExpense();
     Expense getExpenseById(Long id);
-    ResponseEntity<String> udpateExpense(Long id, Expense newExpense);
+    ResponseEntity<String> updateExpense(Long id, Expense newExpense);
     ResponseEntity<String> deleteExpense(Long id);
 }
