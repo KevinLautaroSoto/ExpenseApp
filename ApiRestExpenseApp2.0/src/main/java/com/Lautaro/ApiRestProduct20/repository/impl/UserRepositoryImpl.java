@@ -9,7 +9,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import javax.xml.crypto.Data;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -34,7 +33,7 @@ public class UserRepositoryImpl implements UserRepository {
         public User mapRow(ResultSet rs, int rowNum) throws SQLException {
             User user = new User();
             user.setId(rs.getLong("id"));
-            user.setName(rs.getString("name"));
+            user.setUsername(rs.getString("name"));
             user.setLastname(rs.getString("lastname"));
             user.setEmail(rs.getString("email"));
             return user;
@@ -45,7 +44,7 @@ public class UserRepositoryImpl implements UserRepository {
     public ResponseEntity<String> createUser(User user) {
         try {
             jdbcTemplate.update(INSERT_INTO_USER,
-                    user.getName(),
+                    user.getUsername(),
                     user.getLastname(),
                     user.getEmail());
             return ResponseEntity.ok("User created successfully.");
@@ -74,7 +73,7 @@ public class UserRepositoryImpl implements UserRepository {
         try {
             int rowsAffected = jdbcTemplate.update(
                     UPDATE_USER,
-                    newUser.getName(),
+                    newUser.getUsername(),
                     newUser.getLastname(),
                     newUser.getEmail(),
                     id
